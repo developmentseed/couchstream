@@ -1,5 +1,6 @@
 var url = require('url');
 var request = require('request');
+var crypto = require('crypto');
 
 require('util').inherits(CouchStream, require('events').EventEmitter);
 module.exports = CouchStream;
@@ -18,7 +19,16 @@ function CouchStream(uri) {
     this.uri = uri;
 
     this.connect = this.connect.bind(this);
-    this.connect();
+
+    var stream = this;
+    if (typeof uri.query.filter === 'function') {
+        uri.query.filter = this.createFilter(uri.query.filter, function(err) {
+            if (err) return stream.emit('error', err);
+            stream.connect();
+        });
+    } else {
+        this.connect();
+    }
 }
 
 CouchStream.prototype.write = function(buffer) {
@@ -68,3 +78,39 @@ CouchStream.prototype.end = function() {
 
 // Emulate the buffer interface so that we can pipe into a CouchStream.
 CouchStream.prototype.writable = true;
+
+
+// Create filter functions
+CouchStream.prototype.createFilter = function(filter, callback) {
+    var filter = filter.toString();
+    var name = crypto.createHash('md5').update(filter).digest('hex');
+    var tries = 0;
+    var uri = Object.create(this.uri);
+    uri.pathname = '/' + uri.database + '/_design/couchstream';
+    uri = url.format(uri);
+    retrieve();
+
+    function retrieve() {
+        if (++tries > 10) return callback(new Error('Gave up retrieving filter'));
+        request.get(uri, function(err, res, body) {
+            if (err) setTimeout(retrieve, 1000);
+            else if (res.statusCode == 404) create({});
+            else create(JSON.parse(body));
+        })
+    }
+
+    function create(doc) {
+        if (++tries > 10) return callback(new Error('Gave up creating filter'));
+        if (!doc.filters) doc.filters = {};
+        if (doc.filters[name]) return callback(null);
+        doc.filters[name] = filter;
+
+        request.put({ uri: uri, body: JSON.stringify(doc) }, function(err, res, body) {
+            if (err) setTimeout(create, 1000);
+            else if (res.statusCode < 300) callback(null);
+            else retrieve();
+        });
+    }
+
+    return 'couchstream/' + name;
+};
