@@ -1,0 +1,19 @@
+{
+    "name": "couchstream",
+    "description": "Streams changes from a CouchDB and emits events.",
+    "version": "0.0.1",
+    "homepage": "http://github.com/developmentseed/couchstream",
+    "author": {
+        "name": "Development Seed",
+        "url": "http://developmentseed.org/",
+        "email": "info@developmentseed.org"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/developmentseed/couchstream.git"
+    },
+    "main": "./couchstream.js",
+    "dependencies": {
+        "request": "https://github.com/mikeal/request/tarball/8bb7f98ba8b78c217552c979811c07f1299318fe"
+    }
+}
