@@ -14,6 +14,6 @@
     },
     "main": "./couchstream.js",
     "dependencies": {
-        "request": "https://github.com/mikeal/request/tarball/8bb7f98ba8b78c217552c979811c07f1299318fe"
+        "request": "1.9.x"
     }
 }
